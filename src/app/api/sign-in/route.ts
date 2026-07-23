@@ -254,9 +254,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!user.isActive) {
+    if (!user.isActive || !user.isEmailVerified) {
       return NextResponse.json(
-        { success: false, message: "Account deactivated. Contact your admin." },
+        { success: false, message: "Account deactivated or not verified. Contact your admin." },
         { status: 401 }
       );
     }
