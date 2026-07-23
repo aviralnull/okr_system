@@ -254,12 +254,23 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!user.isActive || !user.isEmailVerified) {
+    if (!user.isActive ) {
       return NextResponse.json(
-        { success: false, message: "Account deactivated or not verified. Contact your admin." },
+        { success: false, message: "Account deactivated. Contact your admin." },
         { status: 401 }
       );
     }
+       if (!user.isEmailVerified) {
+  return NextResponse.json(
+    {
+      success: false,
+      code: "EMAIL_NOT_VERIFIED",
+      email: user.email,
+      message: "Please verify your email before signing in.",
+    },
+    { status: 403 }
+  );
+}
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
