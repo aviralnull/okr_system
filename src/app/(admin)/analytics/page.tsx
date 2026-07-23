@@ -4,6 +4,7 @@ import { getAnalyticsData, getAnalyticsFilterData } from "@/actions/analytics.ac
 import { getManagerScope } from "@/actions/manager-dashboard.data";
 import { AnalyticsClient }  from "@/components/analytics/analytics-client";
 import { Skeleton }         from "@/components/ui/skeleton";
+import { getOrgSubscription } from "@/actions/subscription.actions";
 
 async function AnalyticsContent({ orgId, userId, role }: {
   orgId: string; userId: string; role: string;
@@ -40,6 +41,7 @@ async function AnalyticsContent({ orgId, userId, role }: {
     : undefined;
 
   const data = await getAnalyticsData(orgId, userId, role, defaultFilter);
+  const { plan } = await getOrgSubscription(orgId);
 
   return (
     <AnalyticsClient
@@ -48,6 +50,8 @@ async function AnalyticsContent({ orgId, userId, role }: {
       orgId={orgId}
       userId={userId}
       role={role}
+        plan={plan}
+      
     />
   );
 }
