@@ -325,6 +325,7 @@ export default function VerifyCodePage() {
               {loading ? "Verifying..." : "Verify Email"}
             </Button>
           </form>
+          
         </CardContent>
       </Card>
     </div>
