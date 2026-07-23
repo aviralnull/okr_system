@@ -1,0 +1,370 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  logo          String?
+  website       String?
+  industry      String?
+  size          Int?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  activityLogs  ActivityLog[]
+  departments   Department[]
+  invites       Invite[]
+  notifications Notification[]
+  objectives    Objective[]
+  reviews       Review[]
+  subscriptions Subscription[]
+  teams         Team[]
+  users         User[]
+}
+
+model User {
+  id                      String           @id @default(cuid())
+  name                    String
+  email                   String           @unique
+  password                String
+  avatar                  String?
+  bio                     String?
+  role                    Role             @default(EMPLOYEE)
+  designation             String?
+  employeeId              String?
+  isActive                Boolean          @default(true)
+  joinedAt                DateTime         @default(now())
+  organizationId          String
+  departmentId            String?
+  teamId                  String?
+  managerId               String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  isEmailVerified         Boolean          @default(false)
+  emailVerificationCode   String?
+  emailVerificationExpiry DateTime?
+  accounts                Account[]
+  activityLogs            ActivityLog[]
+  comments                Comment[]
+  notifications           Notification[]
+  createdObjectives       Objective[]      @relation("ObjectiveCreator")
+  objectives              Objective[]      @relation("ObjectiveOwner")
+  progressUpdates         ProgressUpdate[]
+  reviewsReceived         Review[]         @relation("ReviewReceiver")
+  reviewsGiven            Review[]         @relation("ReviewGiver")
+  sessions                Session[]
+  tasks                   Task[]
+  department              Department?      @relation(fields: [departmentId], references: [id])
+  manager                 User?            @relation("ManagerEmployees", fields: [managerId], references: [id])
+  employees               User[]           @relation("ManagerEmployees")
+  organization            Organization     @relation(fields: [organizationId], references: [id])
+  team                    Team?            @relation(fields: [teamId], references: [id])
+  preferences             UserPreference?
+}
+
+model UserPreference {
+  id                 String          @id @default(cuid())
+  userId             String          @unique
+  theme              ThemePreference @default(SYSTEM)
+  language           String          @default("en")
+  timezone           String          @default("UTC")
+  emailNotifications Boolean         @default(true)
+  weeklyDigest       Boolean         @default(true)
+  okrRiskAlerts      Boolean         @default(true)
+  progressReminders  Boolean         @default(true)
+  reviewReminders    Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Department {
+  id             String       @id @default(cuid())
+  name           String
+  organizationId String
+  headId         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  users          User[]
+}
+
+model Team {
+  id             String       @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  leadId         String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  objectives     Objective[]
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  users          User[]
+}
+
+model Objective {
+  id              String           @id @default(cuid())
+  title           String
+  description     String?
+  progress        Float            @default(0)
+  status          ObjectiveStatus  @default(NOT_STARTED)
+  priority        Priority         @default(MEDIUM)
+  quarter         String
+  startDate       DateTime
+  dueDate         DateTime
+  organizationId  String
+  ownerId         String
+  teamId          String?
+  createdById     String
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  comments        Comment[]
+  keyResults      KeyResult[]
+  createdBy       User             @relation("ObjectiveCreator", fields: [createdById], references: [id])
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  owner           User             @relation("ObjectiveOwner", fields: [ownerId], references: [id])
+  team            Team?            @relation(fields: [teamId], references: [id])
+  progressUpdates ProgressUpdate[]
+}
+
+model KeyResult {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  targetValue    Float
+  currentValue   Float          @default(0)
+  startValue     Float          @default(0)
+  unit           String?
+  progress       Float          @default(0)
+  objectiveId    String
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  objective      Objective      @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  progressLogs   KeyResultLog[]
+}
+
+model KeyResultLog {
+  id          String    @id @default(cuid())
+  value       Float
+  note        String?
+  keyResultId String
+  userId      String
+  createdAt   DateTime  @default(now())
+  keyResult   KeyResult @relation(fields: [keyResultId], references: [id], onDelete: Cascade)
+}
+
+model ProgressUpdate {
+  id          String    @id @default(cuid())
+  content     String
+  progress    Float
+  blocker     String?
+  mood        String?
+  objectiveId String
+  userId      String
+  createdAt   DateTime  @default(now())
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  rating         Float
+  strengths      String?
+  weakness       String?
+  aiSummary      String?
+  managerNote    String?
+  feedback       String?
+  reviewPeriod   String
+  employeeId     String
+  reviewerId     String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  employee       User         @relation("ReviewReceiver", fields: [employeeId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  reviewer       User         @relation("ReviewGiver", fields: [reviewerId], references: [id])
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  content     String
+  userId      String
+  objectiveId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  objective   Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  completed    Boolean   @default(false)
+  priority     Priority  @default(MEDIUM)
+  dueDate      DateTime?
+  assignedToId String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  assignedTo   User      @relation(fields: [assignedToId], references: [id])
+}
+
+model Notification {
+  id             String           @id @default(cuid())
+  title          String
+  message        String
+  type           NotificationType @default(SYSTEM)
+  isRead         Boolean          @default(false)
+  link           String?
+  userId         String
+  organizationId String
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id             String       @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String
+  userId         String
+  organizationId String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+}
+
+model Invite {
+  id             String       @id @default(cuid())
+  email          String
+  role           Role         @default(EMPLOYEE)
+  token          String       @unique @default(cuid())
+  status         InviteStatus @default(PENDING)
+  expiresAt      DateTime
+  organizationId String
+  invitedById    String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model Subscription {
+  id                String             @id @default(cuid())
+  plan              Plan               @default(FREE)
+  stripeCustomerId  String?
+  stripeSubId       String?
+  stripePriceId     String?
+  active            Boolean            @default(true)
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  organizationId    String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  status            SubscriptionStatus @default(ACTIVE)
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+  INCOMPLETE
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+enum ObjectiveStatus {
+  NOT_STARTED
+  ON_TRACK
+  AT_RISK
+  BEHIND
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+  ENTERPRISE
+}
+
+enum NotificationType {
+  OKR_ASSIGNED
+  OKR_AT_RISK
+  OKR_COMPLETED
+  PROGRESS_LOGGED
+  REVIEW_DUE
+  REVIEW_SUBMITTED
+  COMMENT_ADDED
+  REMINDER
+  SYSTEM
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
