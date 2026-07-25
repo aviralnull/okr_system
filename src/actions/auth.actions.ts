@@ -268,6 +268,7 @@ export async function acceptInvite(
         email:          invite.email,
         password:       hashedPassword,
         role:           invite.role,
+        isEmailVarified: true,   // updated here
         organizationId: invite.organizationId,
       },
     });
