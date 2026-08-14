@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z }              from "zod";
 import bcrypt             from "bcryptjs";
+import cloudinary from "@/lib/cloudinary";
 
 export type ActionResult =
   | { success: true;  message?: string }
@@ -48,36 +49,198 @@ export async function getSettingsData(userId: string, organizationId: string) {
 export type SettingsData = Awaited<ReturnType<typeof getSettingsData>>;
 
 // ── UPDATE PROFILE ────────────────────────────────────────────
+// const ProfileSchema = z.object({
+//   name:        z.string().min(2, "Name must be at least 2 characters"),
+//   designation: z.string().optional().nullable(),
+//   bio:         z.string().max(300, "Bio max 300 characters").optional().nullable(),
+// });
+
+// export async function updateProfile(formData: FormData): Promise<ActionResult> {
+//   const user = await getCurrentUser();
+
+//   const parsed = ProfileSchema.safeParse({
+//     name:        formData.get("name") ?? "",
+//     designation: (formData.get("designation") as string) || null,
+//     bio:         (formData.get("bio") as string) || null,
+//   });
+//   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
+
+//   await prisma.user.update({
+//     where: { id: user.id },
+//     data:  {
+//       name:        parsed.data.name,
+//       designation: parsed.data.designation,
+//       bio:         parsed.data.bio,
+//     },
+//   });
+
+//   revalidatePath("/settings");
+//   revalidatePath("/dashboard");
+//   return { success: true, message: "Profile updated successfully" };
+// }
+
+
+
+// ── UPDATE PROFILE ────────────────────────────────────────────
 const ProfileSchema = z.object({
-  name:        z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
   designation: z.string().optional().nullable(),
-  bio:         z.string().max(300, "Bio max 300 characters").optional().nullable(),
+  bio: z
+    .string()
+    .max(300, "Bio max 300 characters")
+    .optional()
+    .nullable(),
 });
 
-export async function updateProfile(formData: FormData): Promise<ActionResult> {
-  const user = await getCurrentUser();
+export async function updateProfile(
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const user = await getCurrentUser();
 
-  const parsed = ProfileSchema.safeParse({
-    name:        formData.get("name") ?? "",
-    designation: (formData.get("designation") as string) || null,
-    bio:         (formData.get("bio") as string) || null,
-  });
-  if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
+    const parsed = ProfileSchema.safeParse({
+      name: formData.get("name") ?? "",
+      designation: (formData.get("designation") as string) || null,
+      bio: (formData.get("bio") as string) || null,
+    });
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data:  {
-      name:        parsed.data.name,
-      designation: parsed.data.designation,
-      bio:         parsed.data.bio,
-    },
-  });
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0].message,
+      };
+    }
 
-  revalidatePath("/settings");
-  revalidatePath("/dashboard");
-  return { success: true, message: "Profile updated successfully" };
+    const avatarFile = formData.get("avatar");
+    const avatarUrl = (
+      (formData.get("avatarUrl") as string) || ""
+    ).trim();
+
+    let finalAvatar: string | undefined;
+
+    // =========================================================
+    // 1. COMPUTER UPLOAD
+    // =========================================================
+    if (avatarFile instanceof File && avatarFile.size > 0) {
+      // Validate file type
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+      ];
+
+      if (!allowedTypes.includes(avatarFile.type)) {
+        return {
+          success: false,
+          error: "Only PNG, JPG and WEBP images are allowed",
+        };
+      }
+
+      // Validate size
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        return {
+          success: false,
+          error: "Image must be smaller than 2MB",
+        };
+      }
+
+      // Convert File → Buffer
+      const bytes = await avatarFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      // Upload to Cloudinary
+      const uploadResult = await new Promise<{
+        secure_url: string;
+      }>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: "okr-desk/avatars",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error || !result) {
+              reject(error ?? new Error("Cloudinary upload failed"));
+              return;
+            }
+
+            resolve({
+              secure_url: result.secure_url,
+            });
+          }
+        );
+
+        uploadStream.end(buffer);
+      });
+
+      finalAvatar = uploadResult.secure_url;
+    }
+
+    // =========================================================
+    // 2. URL
+    // =========================================================
+    else if (avatarUrl) {
+      try {
+        const url = new URL(avatarUrl);
+
+        if (!["http:", "https:"].includes(url.protocol)) {
+          return {
+            success: false,
+            error: "Invalid image URL",
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          error: "Invalid image URL",
+        };
+      }
+
+      finalAvatar = avatarUrl;
+    }
+
+    // =========================================================
+    // 3. UPDATE USER
+    // =========================================================
+  const updateData: {
+  name: string;
+  designation: string | null;
+  bio: string | null;
+  avatar?: string;
+} = {
+  name: parsed.data.name,
+  designation: parsed.data.designation ?? null,
+  bio: parsed.data.bio ?? null,
+};
+
+    // Only change avatar when user selected/provided one.
+    if (finalAvatar !== undefined) {
+      updateData.avatar = finalAvatar;
+    }
+
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: updateData,
+    });
+
+    revalidatePath("/settings");
+    revalidatePath("/dashboard");
+    revalidatePath("/", "layout");
+
+    return {
+      success: true,
+      message: "Profile updated successfully",
+    };
+  } catch (error) {
+    console.error("updateProfile error:", error);
+
+    return {
+      success: false,
+      error: "Failed to update profile",
+    };
+  }
 }
-
 // ── UPDATE AVATAR ─────────────────────────────────────────────
 export async function updateAvatar(avatarUrl: string): Promise<ActionResult> {
   const user = await getCurrentUser();

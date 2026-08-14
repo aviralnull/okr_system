@@ -7,7 +7,12 @@ const SECRET = new TextEncoder().encode(process.env.SESSION_SECRET!);
 const PUBLIC_ROUTES = [
   "/sign-in",
   "/sign-up",
+    "/forgot-password",      
+  "/reset-password",       
+  "/verify-code",           
+   "/api/auth", 
   "/invite",
+  "/api/verify-code",    
   "/set-password",
   "/api/sign-in",    // ← YE ZAROORI HAI — public rakho
   "/api/sign-up",

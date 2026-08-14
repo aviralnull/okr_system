@@ -2,6 +2,8 @@
 import { Suspense }       from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { getReviews, getReviewFormData, getReviewStats } from "@/actions/review.actions";
+import { getPeerReviews, getPeerSuggestions }            from "@/actions/peer-reviews.actions";
+import { getOrgSubscription }                            from "@/actions/subscription.actions";
 import { ReviewsClient }  from "@/components/reviews/reviews-client";
 import { Skeleton }       from "@/components/ui/skeleton";
 
@@ -10,10 +12,13 @@ async function ReviewsContent({ orgId, userId, role }: {
 }) {
   const isManagerPlus = ["MANAGER", "HR", "ORG_ADMIN", "SUPER_ADMIN"].includes(role);
 
-  const [reviews, formData, stats] = await Promise.all([
+  const [reviews, formData, stats, sub, peerReviews, peers] = await Promise.all([
     getReviews(orgId, userId, role),
     isManagerPlus ? getReviewFormData(orgId, userId) : Promise.resolve(undefined),
     isManagerPlus ? getReviewStats(orgId)            : Promise.resolve(undefined),
+    getOrgSubscription(orgId),
+    getPeerReviews(orgId, userId),
+    getPeerSuggestions(orgId, userId),
   ]);
 
   return (
@@ -23,6 +28,9 @@ async function ReviewsContent({ orgId, userId, role }: {
       stats={stats}
       isManagerPlus={isManagerPlus}
       currentUserId={userId}
+      plan={sub.plan}
+      peers={peers}
+      myPeerReviews={peerReviews as any}
     />
   );
 }
@@ -35,16 +43,14 @@ export default async function ReviewsPage() {
       <div>
         <h1 className="text-xl font-bold text-foreground">
           {["MANAGER","HR","ORG_ADMIN","SUPER_ADMIN"].includes(user.role)
-            ? "Performance Reviews"
-            : "My Reviews"}
+            ? "Performance Reviews" : "My Reviews"}
         </h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           {["MANAGER","HR","ORG_ADMIN","SUPER_ADMIN"].includes(user.role)
-            ? "Submit and manage team performance reviews"
-            : "View your performance feedback"}
+            ? "Submit, manage, and view team performance reviews"
+            : "View your performance feedback and peer reviews"}
         </p>
       </div>
-
       <Suspense fallback={<ReviewsSkeleton />}>
         <ReviewsContent orgId={user.organizationId} userId={user.id} role={user.role} />
       </Suspense>
@@ -66,7 +72,6 @@ function ReviewsSkeleton() {
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-3 w-48" />
             </div>
-            <Skeleton className="h-8 w-16" />
           </div>
           <Skeleton className="h-16 rounded-lg" />
         </div>

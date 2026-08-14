@@ -5,6 +5,7 @@ import { prisma }         from "@/lib/prisma";
 import { getCurrentUser, requireRole } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z }              from "zod";
+import { sendReviewNotificationEmail } from "@/lib/send-emails";
 
 export type ActionResult =
   | { success: true;  message?: string; id?: string }
@@ -82,19 +83,18 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
 
   const { employeeId, rating, reviewPeriod, strengths, weakness, feedback } = parsed.data;
 
-  // Verify employee belongs to org
   const employee = await prisma.user.findFirst({
     where:  { id: employeeId, organizationId: user.organizationId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, email: true },
   });
   if (!employee) return { success: false, error: "Employee not found" };
 
-  // Generate AI summary
   let aiSummary: string | null = null;
   try {
     aiSummary = generateAISummary({ rating, strengths, weakness, feedback, employeeName: employee.name });
   } catch { /* silent fail */ }
 
+  // ✅ Transaction — sirf DB operations
   const review = await prisma.$transaction(async (tx) => {
     const review = await tx.review.create({
       data: {
@@ -110,7 +110,6 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
       },
     });
 
-    // Notify employee
     await tx.notification.create({
       data: {
         title:          "New performance review",
@@ -136,10 +135,20 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
     return review;
   });
 
+  // ✅ Email AFTER transaction — transaction expire nahi hoga
+  sendReviewNotificationEmail({
+    to:           employee.email,
+    employeeName: employee.name,
+    reviewerName: user.name,
+    orgName:      user.organization?.name ?? "OKR Desk",
+    reviewPeriod,
+    rating,
+    organizationId: user.organizationId,
+  }).catch((err) => console.error("Review email failed:", err));
+
   revalidatePath("/reviews");
   return { success: true, message: "Review submitted successfully", id: review.id };
 }
-
 // ── EDIT REVIEW ───────────────────────────────────────────────
 export async function editReview(id: string, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();

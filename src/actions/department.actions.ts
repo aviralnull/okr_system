@@ -198,6 +198,7 @@ import { prisma }          from "@/lib/prisma";
 import { getCurrentUser, requireRole } from "@/lib/auth";
 import { revalidatePath }  from "next/cache";
 import { z }               from "zod";
+import { checkLimit } from "@/actions/subscription.actions";
 
 export type ActionResult =
   | { success: true;  message?: string; id?: string }
@@ -258,10 +259,11 @@ export async function getDepartmentFormData(organizationId: string) {
       orderBy: { name: "asc" },
     }),
     prisma.user.findMany({
-      where:   { organizationId, isActive: true, role: { not: "SUPER_ADMIN" } },
+      where:   { organizationId, isActive: true, role: { not: "SUPER_ADMIN" },  },
       select: {
         id: true, name: true, email: true, role: true,
         avatar: true, designation: true,
+        departmentId: true,
         department: { select: { id: true, name: true } },
         team:       { select: { id: true, name: true } },
       },
@@ -284,12 +286,28 @@ export async function createDepartment(formData: FormData): Promise<ActionResult
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 
   const { name, headId } = parsed.data;
-
+  const memberIds = JSON.parse(
+    (formData.get("memberIds") as string) || "[]"
+) as string[];
+  
   // Check duplicate name in org
   const existing = await prisma.department.findFirst({
     where: { name: { equals: name, mode: "insensitive" }, organizationId: user.organizationId },
   });
   if (existing) return { success: false, error: "Department with this name already exists" };
+    
+   const limit = await checkLimit(
+    user.organizationId,
+    "maxDepartments"
+);
+
+if (!limit.allowed) {
+    return {
+        success: false,
+        error: `Department limit reached (${limit.current}/${limit.limit}). Upgrade your plan.`,
+    };
+}
+
 
   const dept = await prisma.$transaction(async (tx) => {
     const dept = await tx.department.create({
@@ -299,6 +317,21 @@ export async function createDepartment(formData: FormData): Promise<ActionResult
         organizationId: user.organizationId,
       },
     });
+
+
+    if (memberIds.length > 0) {
+    await tx.user.updateMany({
+        where: {
+            id: {
+                in: memberIds,
+            },
+            organizationId: user.organizationId,
+        },
+        data: {
+            departmentId: dept.id,
+        },
+    });
+}
 
     await tx.activityLog.create({
       data: {
@@ -333,17 +366,59 @@ export async function editDepartment(
   if (!parsed.success) return { success: false, error: parsed.error.issues[0].message };
 
   const { name, headId } = parsed.data;
+  const memberIds = JSON.parse(
+    (formData.get("memberIds") as string) || "[]"
+);
 
-  const dept = await prisma.department.findFirst({
-    where: { id, organizationId: user.organizationId },
-  });
-  if (!dept) return { success: false, error: "Department not found" };
+  // const dept = await prisma.department.findFirst({
+  //   where: { id, organizationId: user.organizationId },
+  // });
+
+
+
+  // if (!dept) return { success: false, error: "Department not found" };
 
   // Check duplicate name (excluding self)
   const duplicate = await prisma.department.findFirst({
     where: { name: { equals: name, mode: "insensitive" }, organizationId: user.organizationId, NOT: { id } },
   });
   if (duplicate) return { success: false, error: "Department with this name already exists" };
+       await prisma.$transaction(async (tx) => {
+  // Update department details
+  await tx.department.update({
+    where: { id },
+    data: {
+      name,
+      headId: headId ?? null,
+    },
+  });
+
+  // Remove all existing department members
+  await tx.user.updateMany({
+    where: {
+      departmentId: id,
+      organizationId: user.organizationId,
+    },
+    data: {
+      departmentId: null,
+    },
+  });
+
+  // Assign newly selected members
+  if (memberIds.length > 0) {
+    await tx.user.updateMany({
+      where: {
+        id: {
+          in: memberIds,
+        },
+        organizationId: user.organizationId,
+      },
+      data: {
+        departmentId: id,
+      },
+    });
+  }
+});
 
   await prisma.department.update({
     where: { id },

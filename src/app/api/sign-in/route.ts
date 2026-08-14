@@ -272,6 +272,18 @@ export async function POST(req: Request) {
   );
 }
 
+     if (!user.isEmailVerified) {
+  return NextResponse.json(
+    {
+      success: false,
+      code: "EMAIL_NOT_VERIFIED",
+      email: user.email,
+      message: "Please verify your email before signing in.",
+    },
+    { status: 403 }
+  );
+}
+
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return NextResponse.json(
@@ -279,7 +291,7 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-
+   
     // Use lib/session.ts — sets "okr_session" cookie
     await createSession(user.id);
 

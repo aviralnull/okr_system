@@ -397,7 +397,19 @@ export function DepartmentsClient({ departments, formData }: {
     departments.filter(d => d.name.toLowerCase().includes(search.toLowerCase())),
     [departments, search]
   );
+   
 
+  const createEmployees = formData.allEmployees.filter(
+  (e) => e.departmentId === null
+);
+
+const editEmployees = editTarget
+  ? formData.allEmployees.filter(
+      (e) =>
+        e.departmentId === null ||
+        e.departmentId === editTarget.id
+    )
+  : [];
   function handleDelete(id: string, name: string) {
     if (!confirm(`Delete "${name}"? Members will be unassigned.`)) return;
     setMenuOpen(null);
@@ -536,7 +548,8 @@ export function DepartmentsClient({ departments, formData }: {
         <DeptTeamModal
           mode="department"
           leads={formData.managers}
-          employees={formData.allEmployees}
+          employees={createEmployees}
+           departments={departments}
           onSubmit={async (fd) => createDepartment(fd)}
           onClose={() => setShowCreate(false)}
         />
@@ -548,7 +561,8 @@ export function DepartmentsClient({ departments, formData }: {
           mode="department"
           existing={getEditData(editTarget)}
           leads={formData.managers}
-          employees={formData.allEmployees}
+          employees={editEmployees}
+           departments={departments}
           onSubmit={async (fd) => editDepartment(editTarget.id, fd)}
           onClose={() => setEditTarget(null)}
         />

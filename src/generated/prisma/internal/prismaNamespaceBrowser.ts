@@ -69,7 +69,8 @@ export const ModelName = {
   Notification: 'Notification',
   ActivityLog: 'ActivityLog',
   Invite: 'Invite',
-  Subscription: 'Subscription'
+  Subscription: 'Subscription',
+  UserDepartment: 'UserDepartment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -203,7 +204,8 @@ export const TeamScalarFieldEnum = {
   organizationId: 'organizationId',
   leadId: 'leadId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  departmentId: 'departmentId'
 } as const
 
 export type TeamScalarFieldEnum = (typeof TeamScalarFieldEnum)[keyof typeof TeamScalarFieldEnum]
@@ -367,7 +369,6 @@ export type InviteScalarFieldEnum = (typeof InviteScalarFieldEnum)[keyof typeof 
 export const SubscriptionScalarFieldEnum = {
   id: 'id',
   plan: 'plan',
-  status: 'status',
   stripeCustomerId: 'stripeCustomerId',
   stripeSubId: 'stripeSubId',
   stripePriceId: 'stripePriceId',
@@ -376,10 +377,20 @@ export const SubscriptionScalarFieldEnum = {
   cancelAtPeriodEnd: 'cancelAtPeriodEnd',
   organizationId: 'organizationId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  status: 'status'
 } as const
 
 export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+export const UserDepartmentScalarFieldEnum = {
+  userId: 'userId',
+  departmentId: 'departmentId',
+  joinedAt: 'joinedAt'
+} as const
+
+export type UserDepartmentScalarFieldEnum = (typeof UserDepartmentScalarFieldEnum)[keyof typeof UserDepartmentScalarFieldEnum]
 
 
 export const SortOrder = {

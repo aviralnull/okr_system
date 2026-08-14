@@ -66,7 +66,11 @@ export async function getCurrentUser() {
       avatar:         true,
       organizationId: true,
       departmentId:   true,
+      designation:    true,
+      employeeId:     true,
       teamId:         true,
+      managerId:      true, 
+      joinedAt :      true,
       organization: {
         select: {
           id:   true,

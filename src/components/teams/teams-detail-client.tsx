@@ -52,7 +52,8 @@ export function TeamDetailClient({
   const [toast, setToast]         = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const lead = formData.allEmployees.find(e => e.id === team.leadId);
+  // const lead = formData.allEmployees.find(e => e.id === team.leadId);
+  const lead = team.lead;
   const activeMembers = team.users.filter(u => u.isActive);
 
   function showToastMsg(msg: string, type: "success" | "error") {
@@ -74,6 +75,7 @@ export function TeamDetailClient({
     name:        team.name,
     description: team.description,
     leadId:      team.leadId,
+     departmentId: team.departmentId,
     memberIds:   team.users.map(u => u.id),
   };
 
@@ -277,6 +279,7 @@ export function TeamDetailClient({
           existing={editExisting}
           leads={formData.leads}
           employees={formData.allEmployees}
+          departments={formData.departments} 
           onSubmit={async (fd) => editTeam(team.id, fd)}
           onClose={() => setShowEdit(false)}
         />

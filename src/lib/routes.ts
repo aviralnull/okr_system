@@ -30,7 +30,14 @@ export const NAV_ITEMS: NavItem[] = [
   section: "work",
 },
 
-
+{
+  href:    "/approvals",
+  label:   "Approvals",
+  icon:    "CheckSquare",
+  roles:   ["MANAGER", "HR", "ORG_ADMIN", "SUPER_ADMIN"],
+  section: "work",
+},
+ 
 
 
   // ── Work ──────────────────────────────────────────────────

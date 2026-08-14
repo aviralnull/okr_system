@@ -112,3 +112,8 @@ export type Invite = Prisma.InviteModel
  * 
  */
 export type Subscription = Prisma.SubscriptionModel
+/**
+ * Model UserDepartment
+ * 
+ */
+export type UserDepartment = Prisma.UserDepartmentModel

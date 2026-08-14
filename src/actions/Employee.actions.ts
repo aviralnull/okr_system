@@ -157,6 +157,7 @@ export async  function inviteEmployee(
         await sendInviteEmail({
             to :email ,
             invitetoken ,
+            organizationId: user.organizationId,
             orgName:     user.organization?.name ?? "Your Organization",
             inviterName: user.name,
             role ,
@@ -225,42 +226,128 @@ export async function editEmployee(
 }
 
 
-export async function toggleEmployeeStatus(
-    employeeId: string 
-) :  Promise<ActionResult>{
-    const user = await  getCurrentUser() ;
-    if(employeeId === user.id) {
-        return {success: false ,error : "You cannot  deactivate yourself"} ;
+// export async function toggleEmployeeStatus(
+//     employeeId: string 
+// ) :  Promise<ActionResult>{
+//     const user = await  getCurrentUser() ;
+//     if(employeeId === user.id) {
+//         return {success: false ,error : "You cannot  deactivate yourself"} ;
 
+//     }
+//     const  employee = await prisma.user.findFirst({
+//         where: {id:employeeId , organizationId: user.organizationId} ,
+//         select: {isActive: true ,name:true} ,
+
+//     }) ;
+//     if(!employee)return {success:false , error: "Employee not found" } ;
+
+//     await prisma.user.update({
+//         where: {id:employeeId} ,
+//         data: {isActive : !employee.isActive} ,
+//     }) ;
+//     await prisma.activityLog.create({
+//         data:{
+//             action: employee.isActive?"deactivated" : "activated" ,
+//             entityType : "User" ,
+//             entityId: employeeId ,
+//             userId: user.id ,
+//             organizationId: user.organizationId ,
+//         } ,
+
+//     })
+//     revalidatePath("/employees") ;
+//     return {
+//         success: true ,
+//         message : `${employee.name} ${employee.isActive?"deactivated" : "activated"}` ,
+//     } ;
+// }
+
+  export type ToggleEmployeeResult =
+  | {
+      success: true;
+      message: string;
+      isActive: boolean;
     }
-    const  employee = await prisma.user.findFirst({
-        where: {id:employeeId , organizationId: user.organizationId} ,
-        select: {isActive: true ,name:true} ,
+  | {
+      success: false;
+      error: string;
+    };
+export async function toggleEmployeeStatus(
+  employeeId: string
+): Promise<ToggleEmployeeResult> {
+  const user = await getCurrentUser();
 
-    }) ;
-    if(!employee)return {success:false , error: "Employee not found" } ;
-
-    await prisma.user.update({
-        where: {id:employeeId} ,
-        data: {isActive : !employee.isActive} ,
-    }) ;
-    await prisma.activityLog.create({
-        data:{
-            action: employee.isActive?"deactivated" : "activated" ,
-            entityType : "User" ,
-            entityId: employeeId ,
-            userId: user.id ,
-            organizationId: user.organizationId ,
-        } ,
-
-    })
-    revalidatePath("/employees") ;
+  if (employeeId === user.id) {
     return {
-        success: true ,
-        message : `${employee.name} ${employee.isActive?"deactivated" : "activated"}` ,
-    } ;
-}
+      success: false,
+      error: "You cannot deactivate yourself",
+    };
+  }
 
+  const employee = await prisma.user.findFirst({
+    where: {
+      id: employeeId,
+      organizationId: user.organizationId,
+    },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+    },
+  });
+
+  if (!employee) {
+    return {
+      success: false,
+      error: "Employee not found",
+    };
+  }
+
+  // Calculate new status
+  const newStatus = !employee.isActive;
+
+  // Update and GET actual value from DB
+  const updatedEmployee = await prisma.user.update({
+    where: {
+      id: employeeId,
+    },
+    data: {
+      isActive: newStatus,
+    },
+    select: {
+      id: true,
+      isActive: true,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      action: updatedEmployee.isActive
+        ? "activated"
+        : "deactivated",
+
+      entityType: "User",
+      entityId: employeeId,
+      userId: user.id,
+      organizationId: user.organizationId,
+
+      metadata: {
+        previousStatus: employee.isActive,
+        newStatus: updatedEmployee.isActive,
+      },
+    },
+  });
+
+  revalidatePath("/employees");
+
+  return {
+    success: true,
+    isActive: updatedEmployee.isActive,
+    message: `${employee.name} ${
+      updatedEmployee.isActive ? "activated" : "deactivated"
+    }`,
+  };
+}
 
 export async function deleteEmployee(
     employeeId : string

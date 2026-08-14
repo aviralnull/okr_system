@@ -8,6 +8,7 @@ from "@/emails/VerificatinEmail"
 
 
 import { resend } from "@/lib/resend";
+import { sendVerificationEmail } from "@/lib/send-emails";
 export async function POST(req: Request) {
 
   try {
@@ -138,23 +139,31 @@ const verificationExpiry =
         },
       });
 
-
-
-   await resend.emails.send({
-
-  from:
-    "onboarding@resend.dev",
-
+  sendVerificationEmail({
   to: email,
+  userName: name,
+  otp: verificationCode,
+}).catch((err) =>
+  console.error("Verification email failed:", err)
+);
 
-  subject:
-    "Email Verification Code",
+//    await resend.emails.send({
 
-  react: VerifyEmail({
-    name,
-    code: verificationCode,
-  }),
-});
+//   from:
+//     "onboarding@resend.dev",
+
+//   to: email,
+
+//   subject:
+//     "Email Verification Code",
+
+//   react: VerifyEmail({
+//     name,
+//     code: verificationCode,
+//   }),
+// });
+
+
 
     return NextResponse.json(
       {

@@ -318,9 +318,10 @@
 
 
 
-
 // src/components/objectives/create-objective-form.tsx
 "use client";
+
+import { AIOKRSuggestions } from "@/components/objectives/ai-suggestions";
 
 import { useState, useTransition, useMemo } from "react";
 import { useRouter }   from "next/navigation";
@@ -361,7 +362,7 @@ function Avatar({ name, avatar }: { name: string; avatar?: string | null }) {
 
 type AssignType = "individual" | "team" | "department";
 
-export function CreateObjectiveForm({ formData }: { formData: ObjectiveFormData }) {
+export function CreateObjectiveForm({ formData, plan = "FREE" }: { formData: ObjectiveFormData; plan?: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error,   setError]        = useState("");
@@ -514,6 +515,13 @@ export function CreateObjectiveForm({ formData }: { formData: ObjectiveFormData 
             <input value={title} onChange={e => setTitle(e.target.value)} autoFocus
               placeholder="e.g. Grow monthly recurring revenue to $500k"
               className="w-full text-sm px-3 py-2.5 rounded-lg border border-border bg-background outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+            {/* AI suggestions — click to fill title */}
+            <div className="mt-2">
+              <AIOKRSuggestions
+                plan={plan as any}
+                onSelect={(s) => setTitle(s)}
+              />
+            </div>
           </div>
 
           <div>

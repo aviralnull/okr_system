@@ -402,7 +402,8 @@ export const ModelName = {
   Notification: 'Notification',
   ActivityLog: 'ActivityLog',
   Invite: 'Invite',
-  Subscription: 'Subscription'
+  Subscription: 'Subscription',
+  UserDepartment: 'UserDepartment'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -418,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "organization" | "user" | "userPreference" | "session" | "account" | "verificationToken" | "department" | "team" | "objective" | "keyResult" | "keyResultLog" | "progressUpdate" | "review" | "comment" | "task" | "notification" | "activityLog" | "invite" | "subscription"
+    modelProps: "organization" | "user" | "userPreference" | "session" | "account" | "verificationToken" | "department" | "team" | "objective" | "keyResult" | "keyResultLog" | "progressUpdate" | "review" | "comment" | "task" | "notification" | "activityLog" | "invite" | "subscription" | "userDepartment"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1828,6 +1829,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserDepartment: {
+      payload: Prisma.$UserDepartmentPayload<ExtArgs>
+      fields: Prisma.UserDepartmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserDepartmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserDepartmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        findFirst: {
+          args: Prisma.UserDepartmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserDepartmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        findMany: {
+          args: Prisma.UserDepartmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>[]
+        }
+        create: {
+          args: Prisma.UserDepartmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        createMany: {
+          args: Prisma.UserDepartmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserDepartmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>[]
+        }
+        delete: {
+          args: Prisma.UserDepartmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        update: {
+          args: Prisma.UserDepartmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserDepartmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserDepartmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserDepartmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserDepartmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserDepartmentPayload>
+        }
+        aggregate: {
+          args: Prisma.UserDepartmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserDepartment>
+        }
+        groupBy: {
+          args: Prisma.UserDepartmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDepartmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserDepartmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserDepartmentCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1982,7 +2057,8 @@ export const TeamScalarFieldEnum = {
   organizationId: 'organizationId',
   leadId: 'leadId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  departmentId: 'departmentId'
 } as const
 
 export type TeamScalarFieldEnum = (typeof TeamScalarFieldEnum)[keyof typeof TeamScalarFieldEnum]
@@ -2146,7 +2222,6 @@ export type InviteScalarFieldEnum = (typeof InviteScalarFieldEnum)[keyof typeof 
 export const SubscriptionScalarFieldEnum = {
   id: 'id',
   plan: 'plan',
-  status: 'status',
   stripeCustomerId: 'stripeCustomerId',
   stripeSubId: 'stripeSubId',
   stripePriceId: 'stripePriceId',
@@ -2155,10 +2230,20 @@ export const SubscriptionScalarFieldEnum = {
   cancelAtPeriodEnd: 'cancelAtPeriodEnd',
   organizationId: 'organizationId',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  status: 'status'
 } as const
 
 export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
+
+
+export const UserDepartmentScalarFieldEnum = {
+  userId: 'userId',
+  departmentId: 'departmentId',
+  joinedAt: 'joinedAt'
+} as const
+
+export type UserDepartmentScalarFieldEnum = (typeof UserDepartmentScalarFieldEnum)[keyof typeof UserDepartmentScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2525,6 +2610,7 @@ export type GlobalOmitConfig = {
   activityLog?: Prisma.ActivityLogOmit
   invite?: Prisma.InviteOmit
   subscription?: Prisma.SubscriptionOmit
+  userDepartment?: Prisma.UserDepartmentOmit
 }
 
 /* Types for Logging */

@@ -65,7 +65,9 @@ model User {
   employees               User[]           @relation("ManagerEmployees")
   organization            Organization     @relation(fields: [organizationId], references: [id])
   team                    Team?            @relation(fields: [teamId], references: [id])
+  UserDepartment          UserDepartment[]
   preferences             UserPreference?
+  UserTeam                UserTeam[]
 }
 
 model UserPreference {
@@ -119,14 +121,16 @@ model VerificationToken {
 }
 
 model Department {
-  id             String       @id @default(cuid())
+  id             String           @id @default(cuid())
   name           String
   organizationId String
   headId         String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  teams          Team[]
   users          User[]
+  UserDepartment UserDepartment[]
 }
 
 model Team {
@@ -137,9 +141,12 @@ model Team {
   leadId         String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  departmentId   String
   objectives     Objective[]
+  department     Department   @relation(fields: [departmentId], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id])
   users          User[]
+  UserTeam       UserTeam[]
 }
 
 model Objective {
@@ -304,6 +311,26 @@ model Subscription {
   updatedAt         DateTime           @updatedAt
   status            SubscriptionStatus @default(ACTIVE)
   organization      Organization       @relation(fields: [organizationId], references: [id])
+}
+
+model UserDepartment {
+  userId       String
+  departmentId String
+  joinedAt     DateTime   @default(now())
+  Department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  User         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, departmentId])
+}
+
+model UserTeam {
+  userId   String
+  teamId   String
+  joinedAt DateTime @default(now())
+  Team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  User     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, teamId])
 }
 
 enum SubscriptionStatus {

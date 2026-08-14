@@ -21,6 +21,7 @@ export interface Lead {
   name:   string;
   role:   string;
   avatar?: string | null;
+  departmentId?: string | null;
 }
 
 interface Props {
@@ -32,9 +33,11 @@ interface Props {
     headId?:     string | null;
     leadId?:     string | null;
     memberIds:   string[];
+    departmentId?: string;
   } | null;
   leads:      Lead[];
   employees:  Employee[];
+  departments: { id: string; name: string }[];   //new added
   onSubmit:   (fd: FormData) => Promise<{ success: boolean; error?: string }>;
   onClose:    () => void;
 }
@@ -51,7 +54,7 @@ function Avatar({ name, avatar, size = "sm" }: { name: string; avatar?: string |
   );
 }
 
-export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onClose }: Props) {
+export function DeptTeamModal({ mode, existing, leads, employees , departments, onSubmit, onClose }: Props) {
   const isEdit       = !!existing;
   const isDept       = mode === "department";
   const label        = isDept ? "Department" : "Team";
@@ -64,6 +67,9 @@ export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onCl
   const [error,       setError]       = useState("");
   const [step,        setStep]        = useState<1 | 2>(1);
   const [pending, startTransition]    = useTransition();
+  const [departmentId, setDepartmentId] = useState(
+  existing?.departmentId ?? ""
+);
 
   const filteredEmployees = useMemo(() =>
     employees.filter(e =>
@@ -73,7 +79,9 @@ export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onCl
     ),
     [employees, memberSearch]
   );
-
+const filteredLeads = leads.filter(
+  (lead) => lead.departmentId === departmentId
+);
   function toggleMember(id: string) {
     setMemberIds(prev => {
       const next = new Set(prev);
@@ -96,13 +104,21 @@ export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onCl
     if (!name.trim()) return setError(`${label} name is required`);
     setError("");
 
+
+
+    if (!isDept && !departmentId) {
+  return setError("Please select a department");
+}
+
     const fd = new FormData();
     fd.set("name",        name.trim());
     fd.set("description", description.trim());
     if (isDept) fd.set("headId", leadId);
     else        fd.set("leadId", leadId);
     fd.set("memberIds", JSON.stringify(Array.from(memberIds)));
-
+    if (!isDept) {
+    fd.set("departmentId", departmentId);
+    }
     startTransition(async () => {
       const res = await onSubmit(fd);
       if (res.success) onClose();
@@ -170,6 +186,43 @@ export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onCl
                 </div>
               )}
 
+
+
+
+
+
+
+
+              {!isDept && (
+  <div>
+    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+      Department *
+    </label>
+
+    <select
+      value={departmentId}
+      onChange={(e) => {setDepartmentId(e.target.value); setLeadId(""); }}
+      className="w-full text-sm px-3 py-2.5 rounded-lg border border-border bg-background"
+    >
+      <option value="">Select Department</option>
+
+      {departments.map((d) => (
+        <option key={d.id} value={d.id}>
+          {d.name}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+
+
+
+
+
+
+
+
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1.5">
                   <Crown size={11} className="inline text-amber-500 mr-1" />
@@ -182,7 +235,7 @@ export function DeptTeamModal({ mode, existing, leads, employees, onSubmit, onCl
                   className="w-full text-sm px-3 py-2.5 rounded-lg border border-border bg-background text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 >
                   <option value="">No {isDept ? "head" : "lead"} assigned</option>
-                  {leads.map(l => (
+                  {filteredLeads.map(l => (
                     <option key={l.id} value={l.id}>
                       {l.name} — {l.role.replace("_", " ")}
                     </option>
