@@ -341,10 +341,12 @@ async function uploadFavicon(file: File) {
 
   try {
     setUploadingFavicon(true);
-
+   console.log("Starting favicon upload");
     const auth = await getCloudinarySignature(
       "okr-desk/favicons"
     );
+    
+console.log("Got Cloudinary auth");
 
     const formData = new FormData();
 
