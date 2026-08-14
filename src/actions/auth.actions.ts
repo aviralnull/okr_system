@@ -460,7 +460,7 @@ export async function acceptInvite(
         email:          invite.email,
         password:       hashed,
         role:           invite.role,
-        isEmailVarified: true,   // updated here
+        isEmailVerified: true,   // updated here
         organizationId: invite.organizationId,
         isActive:       true,
         // ✅ isEmailVerified NAHI likha — field schema mein nahi hai
