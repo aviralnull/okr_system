@@ -403,7 +403,8 @@ export const ModelName = {
   ActivityLog: 'ActivityLog',
   Invite: 'Invite',
   Subscription: 'Subscription',
-  UserDepartment: 'UserDepartment'
+  UserDepartment: 'UserDepartment',
+  UserTeam: 'UserTeam'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -419,7 +420,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "organization" | "user" | "userPreference" | "session" | "account" | "verificationToken" | "department" | "team" | "objective" | "keyResult" | "keyResultLog" | "progressUpdate" | "review" | "comment" | "task" | "notification" | "activityLog" | "invite" | "subscription" | "userDepartment"
+    modelProps: "organization" | "user" | "userPreference" | "session" | "account" | "verificationToken" | "department" | "team" | "objective" | "keyResult" | "keyResultLog" | "progressUpdate" | "review" | "comment" | "task" | "notification" | "activityLog" | "invite" | "subscription" | "userDepartment" | "userTeam"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1903,6 +1904,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserTeam: {
+      payload: Prisma.$UserTeamPayload<ExtArgs>
+      fields: Prisma.UserTeamFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserTeamFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserTeamFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        findFirst: {
+          args: Prisma.UserTeamFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserTeamFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        findMany: {
+          args: Prisma.UserTeamFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>[]
+        }
+        create: {
+          args: Prisma.UserTeamCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        createMany: {
+          args: Prisma.UserTeamCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserTeamCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>[]
+        }
+        delete: {
+          args: Prisma.UserTeamDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        update: {
+          args: Prisma.UserTeamUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserTeamDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserTeamUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserTeamUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserTeamUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserTeamPayload>
+        }
+        aggregate: {
+          args: Prisma.UserTeamAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserTeam>
+        }
+        groupBy: {
+          args: Prisma.UserTeamGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserTeamGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserTeamCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserTeamCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2244,6 +2319,15 @@ export const UserDepartmentScalarFieldEnum = {
 } as const
 
 export type UserDepartmentScalarFieldEnum = (typeof UserDepartmentScalarFieldEnum)[keyof typeof UserDepartmentScalarFieldEnum]
+
+
+export const UserTeamScalarFieldEnum = {
+  userId: 'userId',
+  teamId: 'teamId',
+  joinedAt: 'joinedAt'
+} as const
+
+export type UserTeamScalarFieldEnum = (typeof UserTeamScalarFieldEnum)[keyof typeof UserTeamScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -2611,6 +2695,7 @@ export type GlobalOmitConfig = {
   invite?: Prisma.InviteOmit
   subscription?: Prisma.SubscriptionOmit
   userDepartment?: Prisma.UserDepartmentOmit
+  userTeam?: Prisma.UserTeamOmit
 }
 
 /* Types for Logging */

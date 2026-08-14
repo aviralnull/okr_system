@@ -70,7 +70,8 @@ export const ModelName = {
   ActivityLog: 'ActivityLog',
   Invite: 'Invite',
   Subscription: 'Subscription',
-  UserDepartment: 'UserDepartment'
+  UserDepartment: 'UserDepartment',
+  UserTeam: 'UserTeam'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -391,6 +392,15 @@ export const UserDepartmentScalarFieldEnum = {
 } as const
 
 export type UserDepartmentScalarFieldEnum = (typeof UserDepartmentScalarFieldEnum)[keyof typeof UserDepartmentScalarFieldEnum]
+
+
+export const UserTeamScalarFieldEnum = {
+  userId: 'userId',
+  teamId: 'teamId',
+  joinedAt: 'joinedAt'
+} as const
+
+export type UserTeamScalarFieldEnum = (typeof UserTeamScalarFieldEnum)[keyof typeof UserTeamScalarFieldEnum]
 
 
 export const SortOrder = {

@@ -117,3 +117,8 @@ export type Subscription = Prisma.SubscriptionModel
  * 
  */
 export type UserDepartment = Prisma.UserDepartmentModel
+/**
+ * Model UserTeam
+ * 
+ */
+export type UserTeam = Prisma.UserTeamModel

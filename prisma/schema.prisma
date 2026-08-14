@@ -65,6 +65,7 @@ model User {
   employees               User[]           @relation("ManagerEmployees")
   organization            Organization     @relation(fields: [organizationId], references: [id])
   team                    Team?            @relation(fields: [teamId], references: [id])
+  teamLeads               Team[]           @relation("TeamLead")
   UserDepartment          UserDepartment[]
   preferences             UserPreference?
   UserTeam                UserTeam[]
@@ -147,6 +148,8 @@ model Team {
   organization   Organization @relation(fields: [organizationId], references: [id])
   users          User[]
   UserTeam       UserTeam[]
+
+  lead User? @relation("TeamLead", fields: [leadId], references: [id])
 }
 
 model Objective {
