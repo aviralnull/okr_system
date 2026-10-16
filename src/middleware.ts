@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = [
 ];
 
 function isPublic(pathname: string) {
+   if (pathname === "/") return true; 
   return PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
 }
 
