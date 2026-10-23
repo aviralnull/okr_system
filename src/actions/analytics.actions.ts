@@ -1,4 +1,4 @@
-// src/actions/analytics.actions.ts
+
 "use server";
 
 import { prisma } from "@/lib/prisma";
@@ -64,7 +64,7 @@ export async function getAnalyticsData(
     }),
   ]);
 
-  // Monthly trend — filtered by owner if applicable
+
   const ownerIds = ownerFilter?.in;
 
   const monthlyOKRTrend = ownerIds
@@ -197,7 +197,7 @@ export async function getAnalyticsData(
 
 export type AnalyticsData = Awaited<ReturnType<typeof getAnalyticsData>>;
 
-// ── Filter dropdown data ────────────────────────────────────
+
 export async function getAnalyticsFilterData(organizationId: string) {
   const [teams, departments, members] = await Promise.all([
     prisma.team.findMany({ where: { organizationId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
