@@ -1,173 +1,10 @@
-// "use server";
 
-// import { prisma } from "@/lib/prisma";
-
-// // ── Split into small focused queries — load in parallel via Suspense ──────────
-
-// export async function getDashboardSummary(organizationId: string) {
-//   const [
-//     totalEmployees,
-//     activeEmployees,
-//     totalTeams,
-//     totalDepartments,
-//     pendingInvites,
-//     unreadNotifications,
-//     subscription,
-//     okrStatusGroups,
-//     avgProgressRaw,
-//     totalReviews,
-//     avgRatingRaw,
-//   ] = await Promise.all([
-//     prisma.user.count({ where: { organizationId, role: { not: "SUPER_ADMIN" } } }),
-//     prisma.user.count({ where: { organizationId, isActive: true, role: { not: "SUPER_ADMIN" } } }),
-//     prisma.team.count({ where: { organizationId } }),
-//     prisma.department.count({ where: { organizationId } }),
-//     prisma.invite.count({ where: { organizationId, status: "PENDING" } }),
-//     prisma.notification.count({ where: { organizationId, isRead: false } }),
-//     prisma.subscription.findFirst({ where: { organizationId }, select: { plan: true, active: true } }),
-//     prisma.objective.groupBy({ by: ["status"], where: { organizationId }, _count: true }),
-//     prisma.objective.aggregate({ where: { organizationId }, _avg: { progress: true }, _count: { id: true } }),
-//     prisma.review.count({ where: { organizationId } }),
-//     prisma.review.aggregate({ where: { organizationId }, _avg: { rating: true } }),
-//   ]);
-
-//   const getCount = (s: string) => okrStatusGroups.find((g) => g.status === s)?._count ?? 0;
-
-//   return {
-//     totalEmployees,
-//     activeEmployees,
-//     inactiveEmployees:  totalEmployees - activeEmployees,
-//     totalTeams,
-//     totalDepartments,
-//     totalObjectives:    avgProgressRaw._count.id,
-//     completedOKRs:      getCount("COMPLETED"),
-//     activeOKRs:         avgProgressRaw._count.id - getCount("COMPLETED"),
-//     onTrack:            getCount("ON_TRACK"),
-//     atRisk:             getCount("AT_RISK"),
-//     behind:             getCount("BEHIND"),
-//     notStarted:         getCount("NOT_STARTED"),
-//     avgCompletion:      Math.round(avgProgressRaw._avg.progress ?? 0),
-//     pendingInvites,
-//     avgRating:          parseFloat((avgRatingRaw._avg.rating ?? 0).toFixed(1)),
-//     totalReviews,
-//     unreadNotifications,
-//     plan:               subscription?.plan   ?? "FREE",
-//     planActive:         subscription?.active ?? false,
-//   };
-// }
-
-// export async function getDashboardCharts(organizationId: string) {
-//   const now = new Date();
-//   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-
-//   const last6Labels = Array.from({ length: 6 }, (_, i) => {
-//     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-//     return d.toLocaleString("default", { month: "short" });
-//   });
-
-//   const [roleDistribution, priorityDist, deptStats, monthlyMembers, monthlyOKRs] =
-//     await Promise.all([
-//       prisma.user.groupBy({ by: ["role"], where: { organizationId }, _count: true }),
-
-//       prisma.objective.groupBy({ by: ["priority"], where: { organizationId }, _count: true }),
-
-//       prisma.department.findMany({
-//         where:  { organizationId },
-//         select: {
-//           name:   true,
-//           _count: { select: { users: true } },
-//           users:  { select: { objectives: { select: { progress: true, status: true } } } },
-//         },
-//       }),
-
-//       prisma.$queryRaw<{ month: string; count: bigint }[]>`
-//         SELECT TO_CHAR(DATE_TRUNC('month', "joinedAt"), 'Mon') AS month, COUNT(*) AS count
-//         FROM "User"
-//         WHERE "organizationId" = ${organizationId} AND "joinedAt" >= ${sixMonthsAgo}
-//         GROUP BY DATE_TRUNC('month', "joinedAt")
-//         ORDER BY DATE_TRUNC('month', "joinedAt")
-//       `,
-
-//       prisma.$queryRaw<{ month: string; avg_progress: number; total: bigint }[]>`
-//         SELECT
-//           TO_CHAR(DATE_TRUNC('month', "createdAt"), 'Mon') AS month,
-//           ROUND(AVG(progress)::numeric, 0)                 AS avg_progress,
-//           COUNT(*)                                          AS total
-//         FROM "Objective"
-//         WHERE "organizationId" = ${organizationId} AND "createdAt" >= ${sixMonthsAgo}
-//         GROUP BY DATE_TRUNC('month', "createdAt")
-//         ORDER BY DATE_TRUNC('month', "createdAt")
-//       `,
-//     ]);
-
-//   const memberMap = new Map(monthlyMembers.map((r) => [r.month, Number(r.count)]));
-//   const okrMap    = new Map(monthlyOKRs.map((r) => [r.month, { avg: Number(r.avg_progress), total: Number(r.total) }]));
-
-//   return {
-//     roleDistribution: roleDistribution.map((r) => ({ name: r.role.replace("_", " "), value: r._count })),
-//     priorityDist: priorityDist.map((p) => ({
-//       name: p.priority, value: p._count,
-//       color: p.priority === "CRITICAL" ? "#ef4444" : p.priority === "HIGH" ? "#f59e0b" : p.priority === "MEDIUM" ? "#6366f1" : "#94a3b8",
-//     })),
-//     deptPerformance: deptStats.map((d) => {
-//       const objs = d.users.flatMap((u) => u.objectives);
-//       return {
-//         name: d.name, memberCount: d._count.users, totalOKRs: objs.length,
-//         avgCompletion: objs.length > 0 ? Math.round(objs.reduce((a, o) => a + o.progress, 0) / objs.length) : 0,
-//       };
-//     }),
-//     monthlyNewMembers: last6Labels.map((l) => ({ month: l, count: memberMap.get(l) ?? 0 })),
-//     monthlyOKRTrend:   last6Labels.map((l) => ({ month: l, avgProgress: okrMap.get(l)?.avg ?? 0, total: okrMap.get(l)?.total ?? 0 })),
-//   };
-// }
-
-// export async function getDashboardTables(organizationId: string) {
-//   const [recentObjectives, recentMembers, recentActivity] = await Promise.all([
-//     prisma.objective.findMany({
-//       where:   { organizationId },
-//       orderBy: { createdAt: "desc" },
-//       take:    5,
-//       select: {
-//         id: true, title: true, progress: true, status: true,
-//         owner:  { select: { name: true } },
-//         team:   { select: { name: true } },
-//         _count: { select: { keyResults: true } },
-//       },
-//     }),
-//     prisma.user.findMany({
-//       where:   { organizationId, role: { not: "SUPER_ADMIN" } },
-//       orderBy: { joinedAt: "desc" },
-//       take:    6,
-//       select: {
-//         id: true, name: true, email: true, role: true, isActive: true, avatar: true,
-//         department: { select: { name: true } },
-//         team:       { select: { name: true } },
-//         _count:     { select: { objectives: true } },
-//       },
-//     }),
-//     prisma.activityLog.findMany({
-//       where:   { organizationId },
-//       orderBy: { createdAt: "desc" },
-//       take:    8,
-//       select: {
-//         id: true, action: true, entityType: true, createdAt: true,
-//         user: { select: { name: true, avatar: true } },
-//       },
-//     }),
-//   ]);
-
-//   return { recentObjectives, recentMembers, recentActivity };
-// }
-
-// export type DashboardSummary = Awaited<ReturnType<typeof getDashboardSummary>>;
-// export type DashboardCharts  = Awaited<ReturnType<typeof getDashboardCharts>>;
-// export type DashboardTables  = Awaited<ReturnType<typeof getDashboardTables>>;
 
 "use server";
 
 import { prisma } from "@/lib/prisma";
 
-// ── Single SQL query — sab counts ek saath ──────────────────
+
 export async function getDashboardSummary(organizationId: string) {
 
   // One raw query — DB mein hi sab calculate hota hai
@@ -285,7 +122,6 @@ export async function getDashboardSummary(organizationId: string) {
   };
 }
 
-// ── Charts — 2 queries total ─────────────────────────────────
 
 
 export async function getDashboardCharts(organizationId: string) {
@@ -375,7 +211,6 @@ export async function getDashboardCharts(organizationId: string) {
     `,
   ]);
 
-  // ── Parse results ─────────────────────────────────────────
   const memberMap = new Map(membersRaw.map((r) => [r.month, Number(r.count)]));
   const okrMap    = new Map(okrTrendRaw.map((r) => [r.month, { avg: Number(r.avg_progress), total: Number(r.total) }]));
 
@@ -407,7 +242,7 @@ export async function getDashboardCharts(organizationId: string) {
   };
 }
 
-// ── Tables — 3 targeted queries ──────────────────────────────
+
 export async function getDashboardTables(organizationId: string) {
   const [recentObjectives, recentMembers, recentActivity] = await Promise.all([
     prisma.objective.findMany({
