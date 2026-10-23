@@ -1,214 +1,11 @@
-// 'use server'
-// import {prisma} from "@/lib/prisma"
-// export async function  getOrgAdminDashboardData(organizationId :string){
-//   const last6Months = Array.from({length:6},(_ ,i)=>{
-//     const d = new Date() ;
-//     d.setMonth(d.getMonth() - (5-i)) ;
-//     return {
-//       label : d.toLocaleString("default" , {month : 'short'}) ,
-//       year : d.getFullYear() ,
-//       month : d.getMonth()
-//     } ;
 
-//   } ) ;
-//   const [
-//    totalEmployees ,
-//    activeEmployees ,
-//    totalTeams ,
-//    totalDepartments ,
-//    allObjectives,
-//    pendingInvites,
-//    recentActivity,
-//    recentMembers ,
-//    subscription,
-//    allReviews,
-//    unreadNotifications,
-//    roleDistribution,
-//    departments ,
-
-//   ] = await Promise.all([
-//     prisma.user.count({
-//       where: {organizationId , role : {not :"SUPER_ADMIN"}} ,
-//     }) ,
-//     prisma.user.count({
-//       where: {organizationId , isActive:true , role :{not :"SUPER_ADMIN"}} ,
-//     }) ,
-//     prisma.team.count({where : {organizationId}}) ,
-//     prisma.department.count({where : {organizationId}}) ,
-//     prisma.objective.findMany({
-//       where : {organizationId} ,
-//       include : {
-//         keyResults: true ,
-//         owner : {select: {name: true ,avatar:true , role : true}} ,
-//         team : {select : {name: true}},
-//         progressUpdates : {orderBy : {createdAt: "desc"} , take:1} ,
-//       },
-//       orderBy : {createdAt : "desc"} ,
-
-//     }) ,
-//     prisma.invite.count({where: {organizationId, status: "PENDING"}}),
-//     prisma.activityLog.findMany({
-//       where: {organizationId} ,
-//       orderBy: {createdAt : "desc"},
-//       take : 8,
-//       include : {user : {select: {name : true , avatar: true}}} ,
-
-
-//     }) ,
-//     prisma.user.findMany({
-//       where: {organizationId , role :{not : "SUPER_ADMIN"}} ,
-//       include: {
-//         department : {select: {name : true}} ,
-//         team :      {select: {name : true}} ,
-//         objectives : {select: {status: true , progress : true}} ,
-
-//       } ,
-//       orderBy : {joinedAt : "desc"} ,
-//       take : 6 ,
-//     }) ,
-//     prisma.subscription.findFirst({where: {organizationId}}) ,
-//     prisma.review.findMany({
-//       where: {organizationId} ,
-//       select : {rating: true , createdAt: true},
-
-//     }) ,
-//     prisma.notification.count({where: {organizationId , isRead: false}}) ,
-//     prisma.user.groupBy({
-//       by : ["role"] ,
-//       where : {organizationId} ,
-//       _count : true ,
-//     }) ,
-//     prisma.department.findMany({
-//       where : {organizationId} ,
-//       include: {
-//         users: {
-//           include : {
-//             objectives: {select: {progress: true ,status :true}} ,
-//           }
-//         }
-//       }
-//     }) ,
-
-
-//   ]) ;
-
-//   const onTrack = allObjectives.filter((o)=>o.status ==="ON_TRACK").length ;
-//   const atRisk = allObjectives.filter((o)=>o.status ==="AT_RISK").length ;
-//   const behind = allObjectives.filter((o)=>o.status ==="BEHIND").length ;
-//   const completed =allObjectives.filter((o)=>o.status ==="COMPLETED").length ;
-//   const notStarted =  allObjectives.filter((o)=>o.status ==="NOT_STARTED").length ;
-//   const  avgCompletion = allObjectives.length>0?Math.round(allObjectives.reduce((a,o)=>a +o.progress, 0)/allObjectives.length ):0 ;
-
-//   const  avgRating = allReviews.length > 0
-//       ? parseFloat(
-//           (allReviews.reduce((a, r) => a + r.rating, 0) / allReviews.length).toFixed(1)
-//         )
-//       : 0;
-
-//       const deptStats = departments.map((dept)=>{
-//         const objs = dept.users.flatMap((u)=>u.objectives) ;
-//         const avg = objs.length>0 ?Math.round(objs.reduce((a,o)=> a+o.progress, 0)/objs.length):0 ;
-//         return {
-//           name : dept.name ,
-//           avgCompletion : avg ,
-//           totalOKRs : objs.length,
-//           memberCount : dept.users.length,
-
-//         } ;
-
-//       }) ;
-//       const monthlyNewMembers = await Promise.all(
-//         last6Months.map(async ({label , year , month})=>{
-//           const start = new Date(year, month , 1) ;
-//           const end = new Date(year ,month+1 ,0,23 ,59,59) ;
-//           const count = await  prisma.user.count({
-//             where: {organizationId , joinedAt : {gte: start, lte:end}} ,
-
-//           }) ;
-//           return {month:label ,count} ;
-//         })
-//       ) ;
-
-//       const monthlyOKRTrend = await Promise.all(
-//         last6Months.map(async ({label ,year ,month})=>{
-//         const start = new Date(year, month, 1);
-//       const end   = new Date(year, month + 1, 0, 23, 59, 59);
-//       const objs = await prisma.objective.findMany({
-//         where:{organizationId, createdAt: {gte :start , lte:end}} ,
-//         select: {progress : true} ,
-
-
-//       }) ;
-//       const avg = objs.length>0 ?Math.round(objs.reduce((a,o)=>a+ o.progress , 0)/objs.length) : 0 ;
-//       return {month : label , avgProgress : avg , total : objs.length }
-//         })
-//       ) ;
-//       const priorityDist = await prisma.objective.groupBy({
-//         by : ["priority"] ,
-//         where : {organizationId} ,
-//         _count : true 
-//       }) ;
-//       return  {
-//         summary: {
-//           totalEmployees,
-//           activeEmployees,
-//           inactiveEmployees : totalEmployees-activeEmployees ,
-//           totalTeams ,
-//           totalDepartments ,
-//           totalObjectives : allObjectives.length ,
-//           completedORKs :completed,
-//           activeOKRs : allObjectives.filter((o)=>o.status !=="COMPLETED") ,
-//           avgCompletion ,
-//           pendingInvites ,
-//           avgRating,
-//           totalReviews : allReviews.length,
-//           unreadNotifications,
-//           plan : subscription?.plan  ??"FREE",
-//           planActive :subscription?.active ??false ,
-//         } ,
-//         charts: {
-//           okrStatus: [
-//                { name: "On Track",    value: onTrack,    color: "#10b981" },
-//         { name: "At Risk",     value: atRisk,     color: "#f59e0b" },
-//         { name: "Behind",      value: behind,     color: "#ef4444" },
-//         { name: "Completed",   value: completed,  color: "#6366f1" },
-//         { name: "Not Started", value: notStarted, color: "#94a3b8" },
-//           ] ,
-//           deptPerformance: deptStats,
-//           monthlyOKRTrend ,
-//           monthlyNewMembers,
-//           roleDistribution:roleDistribution.map((r)=>({
-//             name: r.role.replace("_" ," "),
-//             value: r._count,
-//           })),
-//           priorityDist: priorityDist.map((p)=>({
-//             name : p.priority,
-//             value :p._count ,
-//             color :
-//              p.priority === "CRITICAL" ? "#ef4444"
-//           : p.priority === "HIGH"   ? "#f59e0b"
-//           : p.priority === "MEDIUM" ? "#6366f1"
-//           : "#94a3b8",
-//           })),
-
-//         },
-//         recentObjectives : allObjectives.slice(0,5) ,
-//         recentMembers,
-//         recentActivity
-//       } ;
-
-
-
-// } 
-
-// export type OrgAdminDashboardData = Awaited<ReturnType<typeof getOrgAdminDashboardData>> ;
 
 
 "use server";
 
 import { prisma } from "@/lib/prisma";
 
-// ── Single SQL query — sab counts ek saath ──────────────────
+
 export async function getDashboardSummary(organizationId: string) {
 
   // One raw query — DB mein hi sab calculate hota hai
@@ -326,7 +123,7 @@ export async function getDashboardSummary(organizationId: string) {
   };
 }
 
-// ── Charts — 2 queries total ─────────────────────────────────
+
 
 
 export async function getDashboardCharts(organizationId: string) {
@@ -343,7 +140,7 @@ export async function getDashboardCharts(organizationId: string) {
 
   const [roleRaw, priorityRaw, membersRaw, deptRaw, okrTrendRaw] = await Promise.all([
 
-    // 1. Role distribution
+ 
     prisma.$queryRaw<{ name: string; value: bigint }[]>`
       SELECT role::text AS name, COUNT(*)::bigint AS value
       FROM "User"
@@ -351,7 +148,7 @@ export async function getDashboardCharts(organizationId: string) {
       GROUP BY role
     `,
 
-    // 2. Priority distribution
+ 
     prisma.$queryRaw<{ name: string; value: bigint; color: string }[]>`
       SELECT
         priority::text AS name,
@@ -367,7 +164,7 @@ export async function getDashboardCharts(organizationId: string) {
       GROUP BY priority
     `,
 
-    // 3. Monthly new members — quoted "joinedAt"
+  
     prisma.$queryRaw<{ month: string; count: bigint }[]>`
       SELECT
         TO_CHAR(DATE_TRUNC('month', "joinedAt"), 'Mon') AS month,
@@ -379,7 +176,7 @@ export async function getDashboardCharts(organizationId: string) {
       ORDER BY DATE_TRUNC('month', "joinedAt")
     `,
 
-    // 4. Department performance — quoted column names
+ 
     prisma.$queryRaw<{
       dept_name: string;
       member_count: bigint;
@@ -398,7 +195,7 @@ export async function getDashboardCharts(organizationId: string) {
       GROUP BY d.id, d.name
     `,
 
-    // 5. Monthly OKR trend — quoted "createdAt"
+ 
     prisma.$queryRaw<{
       month: string;
       avg_progress: number;
@@ -416,7 +213,7 @@ export async function getDashboardCharts(organizationId: string) {
     `,
   ]);
 
-  // ── Parse results ─────────────────────────────────────────
+
   const memberMap = new Map(membersRaw.map((r) => [r.month, Number(r.count)]));
   const okrMap    = new Map(okrTrendRaw.map((r) => [r.month, { avg: Number(r.avg_progress), total: Number(r.total) }]));
 
@@ -448,7 +245,7 @@ export async function getDashboardCharts(organizationId: string) {
   };
 }
 
-// ── Tables — 3 targeted queries ──────────────────────────────
+
 export async function getDashboardTables(organizationId: string) {
   const [recentObjectives, recentMembers, recentActivity] = await Promise.all([
     prisma.objective.findMany({
