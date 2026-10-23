@@ -127,12 +127,10 @@ export async function getAIOKRSuggestions() {
 
 
 
-// // .env: GEMINI_API_KEY=...   (from aistudio.google.com)
-// //       GEMINI_MODEL=...     (copy exact free-tier model ID from AI Studio)
 // const ai    = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 // const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
-// // One shape for both AI output and the rule-based fallback
+
 // const SuggestionSchema = z.object({
 //   objective:  z.string().min(10).max(140),
 //   keyResults: z.array(z.string().max(140)).max(4),
@@ -140,7 +138,6 @@ export async function getAIOKRSuggestions() {
 // });
 // type Suggestion = z.infer<typeof SuggestionSchema>;
 
-// // LLM output is untrusted input -> validate like any API payload
 // const AIOutputSchema = z.object({
 //   suggestions: z.array(
 //     SuggestionSchema.extend({ keyResults: z.array(z.string().max(140)).min(2).max(4) })
@@ -304,7 +301,7 @@ export async function getAIOKRSuggestions() {
 
 //   const quarter = getQuarter();
 
-//   // No key configured -> don't even try, just use templates
+
 //   if (!process.env.GEMINI_API_KEY) {
 //     return getRuleBasedSuggestions(u, quarter);
 //   }
@@ -333,7 +330,7 @@ export async function getAIOKRSuggestions() {
 
 //     const parsed = AIOutputSchema.parse(JSON.parse(res.text ?? ""));
 
-//     // Safety net: drop anything that duplicates a past objective
+//  
 //     const usedTitles = new Set(u?.objectives.map(o => o.title.toLowerCase()) ?? []);
 //     const suggestions = parsed.suggestions.filter(
 //       s => !usedTitles.has(s.objective.toLowerCase())
@@ -353,7 +350,7 @@ export async function getAIOKRSuggestions() {
 //       currentQuarter: quarter,
 //     };
 //   } catch (err) {
-//     // 429 (free-tier quota), network error, bad JSON, schema mismatch -> graceful degradation
+//  
 //     console.error("Gemini suggestions failed, using fallback:", err);
 //     return getRuleBasedSuggestions(u, quarter);
 //   }
