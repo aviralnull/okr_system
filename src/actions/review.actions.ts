@@ -1,4 +1,4 @@
-// src/actions/review.actions.ts
+
 "use server";
 
 import { prisma }         from "@/lib/prisma";
@@ -38,7 +38,7 @@ export async function getReviews(organizationId: string, userId: string, role: s
 
 export type ReviewListItem = Awaited<ReturnType<typeof getReviews>>[number];
 
-// ── GET SINGLE REVIEW ─────────────────────────────────────────
+
 export async function getReviewById(id: string, organizationId: string) {
   return prisma.review.findFirst({
     where:   { id, organizationId },
@@ -49,7 +49,7 @@ export async function getReviewById(id: string, organizationId: string) {
   });
 }
 
-// ── GET FORM DATA — employees to review ──────────────────────
+
 export async function getReviewFormData(organizationId: string, reviewerId: string) {
   const employees = await prisma.user.findMany({
     where:   { organizationId, isActive: true, role: { not: "SUPER_ADMIN" }, NOT: { id: reviewerId } },
@@ -65,7 +65,6 @@ export async function getReviewFormData(organizationId: string, reviewerId: stri
 
 export type ReviewFormData = Awaited<ReturnType<typeof getReviewFormData>>;
 
-// ── CREATE REVIEW ─────────────────────────────────────────────
 export async function createReview(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   requireRole(user.role, "MANAGER");
@@ -94,7 +93,7 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
     aiSummary = generateAISummary({ rating, strengths, weakness, feedback, employeeName: employee.name });
   } catch { /* silent fail */ }
 
-  // ✅ Transaction — sirf DB operations
+
   const review = await prisma.$transaction(async (tx) => {
     const review = await tx.review.create({
       data: {
@@ -135,7 +134,7 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
     return review;
   });
 
-  // ✅ Email AFTER transaction — transaction expire nahi hoga
+
   sendReviewNotificationEmail({
     to:           employee.email,
     employeeName: employee.name,
@@ -149,7 +148,7 @@ export async function createReview(formData: FormData): Promise<ActionResult> {
   revalidatePath("/reviews");
   return { success: true, message: "Review submitted successfully", id: review.id };
 }
-// ── EDIT REVIEW ───────────────────────────────────────────────
+
 export async function editReview(id: string, formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   requireRole(user.role, "MANAGER");
@@ -187,7 +186,7 @@ export async function editReview(id: string, formData: FormData): Promise<Action
   return { success: true, message: "Review updated" };
 }
 
-// ── DELETE REVIEW ─────────────────────────────────────────────
+
 export async function deleteReview(id: string): Promise<ActionResult> {
   const user = await getCurrentUser();
 
@@ -207,7 +206,6 @@ export async function deleteReview(id: string): Promise<ActionResult> {
   return { success: true, message: "Review deleted" };
 }
 
-// ── GET STATS — review analytics ─────────────────────────────
 export async function getReviewStats(organizationId: string) {
   const [total, avgRating, byPeriod] = await Promise.all([
     prisma.review.count({ where: { organizationId } }),
@@ -232,7 +230,6 @@ export async function getReviewStats(organizationId: string) {
   };
 }
 
-// ── LOCAL AI SUMMARY GENERATOR ────────────────────────────────
 function generateAISummary({
   rating, strengths, weakness, feedback, employeeName,
 }: {
