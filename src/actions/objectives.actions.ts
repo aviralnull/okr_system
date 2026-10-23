@@ -12,9 +12,6 @@ export type ActionResult =
   | { success: true;  message?: string; id?: string }
   | { success: false; error: string };
 
-// ─────────────────────────────────────────────────────────────
-// SCHEMAS
-// ─────────────────────────────────────────────────────────────
 const KeyResultSchema = z.object({
   title:       z.string().min(2, "Key result title required"),
   targetValue: z.coerce.number().positive("Target must be > 0"),
@@ -35,9 +32,7 @@ const CreateObjectiveSchema = z.object({
   keyResults:   z.array(KeyResultSchema).min(1, "At least one key result required"),
 });
 
-// ─────────────────────────────────────────────────────────────
-// GET ALL OBJECTIVES — role-aware + filters
-// ─────────────────────────────────────────────────────────────
+
 export async function getObjectives(
   organizationId: string,
   userId:         string,
@@ -51,17 +46,17 @@ export async function getObjectives(
 ) {
   const isManagerPlus = ["MANAGER", "HR", "ORG_ADMIN", "SUPER_ADMIN"].includes(role);
 
-  // Build where clause
+
   const where: any = { organizationId };
 
   if (!isManagerPlus) {
-    // Employee sees only their own
+
     where.ownerId = userId;
   } else {
-    // Manager+ can filter
+ 
     if (filters?.teamId)       where.teamId       = filters.teamId;
     if (filters?.departmentId) {
-      // Get all users in that department
+     
       const deptUsers = await prisma.user.findMany({
         where:  { organizationId, departmentId: filters.departmentId },
         select: { id: true },
@@ -90,9 +85,7 @@ export async function getObjectives(
 
 export type ObjectiveListItem = Awaited<ReturnType<typeof getObjectives>>[number];
 
-// ─────────────────────────────────────────────────────────────
-// GET FORM DATA — teams, departments, users
-// ─────────────────────────────────────────────────────────────
+
 export async function getObjectiveFormData(organizationId: string, currentUserId: string) {
   const [teams, departments, users] = await Promise.all([
     prisma.team.findMany({
@@ -120,9 +113,7 @@ export async function getObjectiveFormData(organizationId: string, currentUserId
 
 export type ObjectiveFormData = Awaited<ReturnType<typeof getObjectiveFormData>>;
 
-// ─────────────────────────────────────────────────────────────
-// GET FILTER DATA — for objectives list filters
-// ─────────────────────────────────────────────────────────────
+
 export async function getObjectiveFilterData(organizationId: string) {
   const [teams, departments, members] = await Promise.all([
     prisma.team.findMany({ where: { organizationId }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
@@ -138,9 +129,6 @@ export async function getObjectiveFilterData(organizationId: string) {
 
 export type ObjectiveFilterData = Awaited<ReturnType<typeof getObjectiveFilterData>>;
 
-// ─────────────────────────────────────────────────────────────
-// GET SINGLE OBJECTIVE
-// ─────────────────────────────────────────────────────────────
 export async function getObjectiveById(id: string, organizationId: string) {
   return prisma.objective.findFirst({
     where:   { id, organizationId },
@@ -172,9 +160,7 @@ export async function getObjectiveById(id: string, organizationId: string) {
 
 export type ObjectiveDetail = Awaited<ReturnType<typeof getObjectiveById>>;
 
-// ─────────────────────────────────────────────────────────────
-// GET TEAM OVERVIEW — manager sees each member's OKRs
-// ─────────────────────────────────────────────────────────────
+
 export async function getTeamOKROverview(organizationId: string, managerId: string) {
   // Get manager's team
   const manager = await prisma.user.findUnique({
@@ -220,12 +206,10 @@ async function validateManagerScope(
     select: { teamId: true, departmentId: true, role: true },
   });
 
-  // Org admins / HR have no restriction
   if (["ORG_ADMIN", "SUPER_ADMIN", "HR"].includes(manager?.role ?? "")) {
     return { valid: true };
   }
 
-  // Get all users in manager's scope
   const scopedUsers = await prisma.user.findMany({
     where: {
       organizationId,
@@ -241,7 +225,7 @@ async function validateManagerScope(
 
   const scopedIds = new Set([...scopedUsers.map(u => u.id), managerId]);
 
-  // Check every target is in scope
+ 
   const outOfScope = targetOwnerIds.filter(id => !scopedIds.has(id));
   if (outOfScope.length > 0) {
     return {
@@ -264,9 +248,6 @@ async function validateManagerScope(
 
 
 
-// ─────────────────────────────────────────────────────────────
-// CREATE OBJECTIVE — assigns to individual / all team members / all dept members
-// ─────────────────────────────────────────────────────────────
 export async function createObjective(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser();
   requireRole(user.role, "MANAGER");
@@ -334,7 +315,6 @@ if (!objectiveLimit.allowed) {
  try {
     const createdIds: string[] = [];
 
-    // ✅ Fetch owner details BEFORE transaction
     const ownerDetails = await prisma.user.findMany({
       where:  { id: { in: ownerIds } },
       select: { id: true, name: true, email: true },
@@ -376,7 +356,7 @@ if (!objectiveLimit.allowed) {
      
         createdIds.push(obj.id);
 
-        // Notify each assignee (skip if self-assigning)
+
         if (ownerId !== user.id) {
           await tx.notification.create({
             data: {
@@ -411,7 +391,7 @@ if (!objectiveLimit.allowed) {
     maxWait: 10000,
   });
 
-    // ✅ Send emails AFTER transaction — outside so failure never breaks OKR creation
+  
     for (const ownerId of ownerIds) {
       if (ownerId === user.id) continue;
 
@@ -447,9 +427,7 @@ if (!objectiveLimit.allowed) {
     return { success: false, error: "Failed to create objective" };
   }
 }
-// ─────────────────────────────────────────────────────────────
-// LOG KEY RESULT PROGRESS
-// ─────────────────────────────────────────────────────────────
+
 const LogProgressSchema = z.object({
   keyResultId: z.string(),
   value:       z.coerce.number().min(0),
@@ -547,9 +525,7 @@ export async function logKeyResultProgress(formData: FormData): Promise<ActionRe
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// ADD COMMENT
-// ─────────────────────────────────────────────────────────────
+
 export async function addComment(objectiveId: string, content: string): Promise<ActionResult> {
   const user = await getCurrentUser();
   if (!content.trim()) return { success: false, error: "Comment cannot be empty" };
@@ -581,9 +557,7 @@ export async function addComment(objectiveId: string, content: string): Promise<
   return { success: true };
 }
 
-// ─────────────────────────────────────────────────────────────
-// UPDATE STATUS
-// ─────────────────────────────────────────────────────────────
+
 const STATUS_VALUES = ["NOT_STARTED", "ON_TRACK", "AT_RISK", "BEHIND", "COMPLETED"] as const;
 
 export async function updateObjectiveStatus(
@@ -609,9 +583,7 @@ export async function updateObjectiveStatus(
   return { success: true };
 }
 
-// ─────────────────────────────────────────────────────────────
-// DELETE
-// ─────────────────────────────────────────────────────────────
+
 export async function deleteObjective(objectiveId: string): Promise<ActionResult> {
   const user = await getCurrentUser();
 
