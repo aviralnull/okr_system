@@ -11,8 +11,7 @@ export type ActionResult =
   | { success: true;  message?: string; key?: string }
   | { success: false; error: string };
 
-// Store API keys in ActivityLog metadata (no schema change needed)
-// In production: use a dedicated ApiKey model
+
 
 function generateApiKey(): string {
   return `okr_${crypto.randomBytes(32).toString("hex")}`;
